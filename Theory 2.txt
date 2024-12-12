@@ -1,0 +1,209 @@
+# A2
+https://spring-boot-app-925354215034.us-east4.run.app/plantuml/e1c48b0e-7576-459b-900d-fbdf873c1736.png
+Let's break down the code line by line, explaining each part in **simple and beginner-friendly language**.
+
+---
+
+### **Importing Libraries**
+
+```python
+import numpy as np
+import skfuzzy as fuzz
+from skfuzzy import control as ctrl
+```
+
+1. **`numpy`**: A Python library used for working with numbers and arrays. Here, we use it to create ranges of numbers (e.g., temperature from 0 to 40).
+2. **`skfuzzy`**: A library for fuzzy logic operations. It's used to create membership functions, define fuzzy rules, and simulate fuzzy systems.
+3. **`control` from `skfuzzy`**: This module helps define fuzzy variables and rules and perform simulations.
+
+---
+
+### **Defining Input Variables**
+
+```python
+temperature = ctrl.Antecedent(np.arange(0, 41, 1), 'temperature')
+humidity = ctrl.Antecedent(np.arange(0, 101, 1), 'humidity')
+```
+
+- **`temperature` and `humidity`** are the inputs for the system.
+- **`Antecedent`**: This represents an input variable in fuzzy logic.
+- **`np.arange(0, 41, 1)`**: Creates a range of values for temperature (from 0 to 40, step 1).
+- **`np.arange(0, 101, 1)`**: Creates a range of values for humidity (from 0 to 100, step 1).
+- These inputs represent the real-world values of temperature (°C) and humidity (%).
+
+---
+
+### **Defining Output Variable**
+
+```python
+ac_power = ctrl.Consequent(np.arange(0, 101, 1), 'ac_power')
+```
+
+- **`ac_power`**: The output variable, representing how much power (in %) the air conditioner should use.
+- **`Consequent`**: This represents an output variable in fuzzy logic.
+- **`np.arange(0, 101, 1)`**: The output range is 0% to 100%.
+
+---
+
+### **Defining Membership Functions**
+
+#### For Temperature:
+```python
+temperature['cold'] = fuzz.trimf(temperature.universe, [0, 0, 20])
+temperature['comfortable'] = fuzz.trimf(temperature.universe, [15, 22.5, 30])
+temperature['hot'] = fuzz.trimf(temperature.universe, [25, 40, 40])
+```
+
+- **Membership Functions**: These define how input values (e.g., 25°C) are classified into fuzzy categories like "cold," "comfortable," or "hot."
+- **`fuzz.trimf`**: Creates a triangular membership function.
+  - **Example for `cold`**: It is 100% "cold" at 0°C and 0% "cold" at 20°C.
+  - **Example for `comfortable`**: It peaks at 22.5°C and gradually decreases on either side.
+
+---
+
+#### For Humidity:
+```python
+humidity['dry'] = fuzz.trimf(humidity.universe, [0, 0, 50])
+humidity['normal'] = fuzz.trimf(humidity.universe, [30, 50, 70])
+humidity['humid'] = fuzz.trimf(humidity.universe, [50, 100, 100])
+```
+
+- **Dry**: Fully "dry" at 0%, starts decreasing after 50%.
+- **Normal**: Peaks at 50% and decreases on either side.
+- **Humid**: Fully "humid" at 100%, starts increasing after 50%.
+
+---
+
+#### For AC Power:
+```python
+ac_power['low'] = fuzz.trimf(ac_power.universe, [0, 0, 50])
+ac_power['medium'] = fuzz.trimf(ac_power.universe, [25, 50, 75])
+ac_power['high'] = fuzz.trimf(ac_power.universe, [50, 100, 100])
+```
+
+- **Low**: AC uses minimal power (up to 50%).
+- **Medium**: AC uses moderate power (around 50%).
+- **High**: AC uses maximum power (above 75%).
+
+---
+
+### **Defining Fuzzy Rules**
+
+```python
+rule1 = ctrl.Rule(temperature['cold'] & humidity['dry'], ac_power['low'])
+rule2 = ctrl.Rule(temperature['cold'] & humidity['normal'], ac_power['low'])
+rule3 = ctrl.Rule(temperature['cold'] & humidity['humid'], ac_power['medium'])
+rule4 = ctrl.Rule(temperature['comfortable'] & humidity['dry'], ac_power['low'])
+rule5 = ctrl.Rule(temperature['comfortable'] & humidity['normal'], ac_power['medium'])
+rule6 = ctrl.Rule(temperature['comfortable'] & humidity['humid'], ac_power['medium'])
+rule7 = ctrl.Rule(temperature['hot'] & humidity['dry'], ac_power['medium'])
+rule8 = ctrl.Rule(temperature['hot'] & humidity['normal'], ac_power['high'])
+rule9 = ctrl.Rule(temperature['hot'] & humidity['humid'], ac_power['high'])
+```
+
+- **Purpose**: These rules define how the system behaves under different conditions of temperature and humidity.
+- **Examples**:
+  - Rule 1: If it’s "cold" and "dry," AC power should be "low."
+  - Rule 9: If it’s "hot" and "humid," AC power should be "high."
+- **`&`**: Represents "AND" logic in fuzzy rules.
+
+---
+
+### **Creating the Fuzzy Control System**
+
+```python
+ac_ctrl = ctrl.ControlSystem([rule1, rule2, rule3, rule4, rule5, rule6, rule7, rule8, rule9])
+ac_simulation = ctrl.ControlSystemSimulation(ac_ctrl)
+```
+
+- **`ctrl.ControlSystem`**: Combines all fuzzy rules into a single control system.
+- **`ctrl.ControlSystemSimulation`**: Creates a simulation instance for applying inputs and generating outputs.
+
+---
+
+### **Defining a Function to Calculate AC Power**
+
+```python
+def get_ac_power(temp, hum):
+    ac_simulation.input['temperature'] = temp
+    ac_simulation.input['humidity'] = hum
+    ac_simulation.compute()
+    return ac_simulation.output['ac_power']
+```
+
+- **Input Parameters**:
+  - `temp`: The temperature provided by the user.
+  - `hum`: The humidity provided by the user.
+- **How it works**:
+  - Takes the inputs (`temp` and `hum`).
+  - Runs the fuzzy control system simulation (`ac_simulation.compute()`).
+  - Returns the computed AC power.
+
+---
+
+### **Example Usage**
+
+```python
+if __name__ == "__main__":
+    print("Air Conditioner Fuzzy Logic Controller")
+    print("--------------------------------------")
+    while True:
+        try:
+            temp = float(input("Enter temperature (0-40°C): "))
+            hum = float(input("Enter humidity (0-100%): "))
+            if 0 <= temp <= 40 and 0 <= hum <= 100:
+                power = get_ac_power(temp, hum)
+                print(f"Recommended AC power: {power:.2f}%")
+            else:
+                print("Invalid input. Please enter values within the specified ranges.")
+        except ValueError:
+            print("Invalid input. Please enter numeric values.")
+        cont = input("Do you want to try another set of values? (y/n): ")
+        if cont.lower() != 'y':
+            break
+    print("Thank you for using the AC Fuzzy Logic Controller!")
+```
+
+#### Step-by-step Explanation:
+1. **Inputs from User**:
+   - `temp`: User enters a temperature value between 0°C and 40°C.
+   - `hum`: User enters a humidity value between 0% and 100%.
+
+2. **Check Validity**:
+   - Ensures the entered values are within the valid ranges.
+
+3. **Compute AC Power**:
+   - Calls the `get_ac_power()` function to calculate the recommended AC power level.
+
+4. **Loop for Multiple Inputs**:
+   - Allows the user to test different combinations of inputs repeatedly.
+
+5. **Exit Condition**:
+   - If the user enters `n` when prompted, the program ends.
+
+---
+
+### **Example Run**
+
+#### Input:
+```
+Enter temperature (0-40°C): 30
+Enter humidity (0-100%): 60
+```
+
+#### Output:
+```
+Recommended AC power: 70.12%
+```
+
+The program calculates that for 30°C and 60% humidity, the air conditioner should use about 70% of its power.
+
+---
+
+This explanation breaks the code into simple parts and explains the logic step by step. Let me know if you need further clarifications!
+
+
+
+
+
+
